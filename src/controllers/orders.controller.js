@@ -23,4 +23,93 @@ const getAllOrders = async (req, res) => {
   }
 };
 
+const pool = require("../config/db");
+
+const createOrder = async (req, res) => {
+  const userId = req.user.id;
+  const {
+    raffle_id,
+    numbers,
+    payment_method,
+    payment_reference,
+    receipt_url,
+  } = req.body;
+
+  if (
+    !raffle_id ||
+    !Array.isArray(numbers) ||
+    numbers.length === 0 ||
+    !payment_method ||
+    !payment_reference ||
+    !receipt_url
+  ) {
+    return res.status(400).json({ error: "Datos incompletos" });
+  }
+
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    // 1️⃣ Obtener sorteo
+    const raffleRes = await client.query(
+      "SELECT price_per_ticket FROM raffles WHERE id = $1",
+      [raffle_id]
+    );
+
+    if (raffleRes.rows.length === 0) {
+      throw new Error("Sorteo no existe");
+    }
+
+    const price = raffleRes.rows[0].price_per_ticket;
+
+    // 2️⃣ Calcular total
+    const totalAmount = price * numbers.length;
+
+    // 3️⃣ Crear orden
+    const orderRes = await client.query(
+      `
+      INSERT INTO orders (
+        user_id,
+        raffle_id,
+        total_amount,
+        payment_status,
+        payment_method,
+        payment_reference,
+        receipt_url
+      )
+      VALUES ($1, $2, $3, 'pending', $4, $5, $6)
+      RETURNING id
+      `,
+      [
+        userId,
+        raffle_id,
+        totalAmount,
+        payment_method,
+        payment_reference,
+        receipt_url,
+      ]
+    );
+
+    const orderId = orderRes.rows[0].id;
+
+    // ⛔ aquí luego irá order_numbers
+
+    await client.query("COMMIT");
+
+    res.status(201).json({
+      message: "Orden creada correctamente",
+      order_id: orderId,
+    });
+
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("CREATE ORDER ERROR:", err.message);
+    res.status(400).json({ error: err.message });
+  } finally {
+    client.release();
+  }
+};
+
 module.exports = { getAllOrders };
+module.exports = { createOrder };
