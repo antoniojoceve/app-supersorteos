@@ -111,5 +111,77 @@ const createOrder = async (req, res) => {
   }
 };
 
+const approveOrder = async (req, res) => {
+  const orderId = req.params.id;
+  const adminId = req.user.id;
+
+  try {
+    const result = await pool.query(
+      `
+      UPDATE orders
+      SET
+        payment_status = 'approved',
+        reviewed_at = NOW(),
+        reviewed_by = $1
+      WHERE id = $2
+        AND payment_status = 'pending'
+      RETURNING id
+      `,
+      [adminId, orderId]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(400).json({
+        error: "Orden no válida o ya revisada",
+      });
+    }
+
+    res.json({ message: "Orden aprobada correctamente" });
+  } catch (err) {
+    console.error("APPROVE ORDER ERROR:", err);
+    res.status(500).json({ error: "Error interno" });
+  }
+};
+
+const rejectOrder = async (req, res) => {
+  const orderId = req.params.id;
+  const adminId = req.user.id;
+  const { admin_note } = req.body;
+
+  try {
+    const result = await pool.query(
+      `
+      UPDATE orders
+      SET
+        payment_status = 'rejected',
+        reviewed_at = NOW(),
+        reviewed_by = $1,
+        admin_note = $2
+      WHERE id = $3
+        AND payment_status = 'pending'
+      RETURNING id
+      `,
+      [adminId, admin_note || null, orderId]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(400).json({
+        error: "Orden no válida o ya revisada",
+      });
+    }
+
+    res.json({ message: "Orden rechazada correctamente" });
+  } catch (err) {
+    console.error("REJECT ORDER ERROR:", err);
+    res.status(500).json({ error: "Error interno" });
+  }
+};
+
 module.exports = { getAllOrders };
 module.exports = { createOrder };
+module.exports = {
+  getAllOrders,
+  createOrder,
+  approveOrder,
+  rejectOrder
+};
