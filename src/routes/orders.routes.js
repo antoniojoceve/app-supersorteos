@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { ordersLimiter } = require("../middleware/rateLimit");
+const { ordersLimiter } = require("../middlewares/rateLimit");
 
 const {
   getAllOrders,
