@@ -152,6 +152,15 @@ const createOrder = async (req, res) => {
     order_id: orderId,
   });
 
+  await sendEmail({
+    to: user.email,
+    subject: "Orden creada - Super Sorteos",
+    html: orderCreatedTemplate({
+      raffleTitle: raffle.title,
+      totalAmount: order.total_amount,
+    }),
+  });
+
   } catch (err) {
     await client.query("ROLLBACK");
     console.error("CREATE ORDER ERROR:", err.message);
@@ -160,15 +169,6 @@ const createOrder = async (req, res) => {
     client.release();
   }
 };
-
-await sendEmail({
-  to: user.email,
-  subject: "Orden creada - Super Sorteos",
-  html: orderCreatedTemplate({
-    raffleTitle: raffle.title,
-    totalAmount: order.total_amount,
-  }),
-});
 
 const approveOrder = async (req, res) => {
   const orderId = req.params.id;
@@ -195,6 +195,8 @@ const approveOrder = async (req, res) => {
       });
     }
 
+    res.json({ message: "Orden aprobada correctamente" });
+
     await sendEmail({
       to: user.email,
       subject: "Orden aprobada - Super Sorteos",
@@ -204,7 +206,6 @@ const approveOrder = async (req, res) => {
       }),
     });
 
-    res.json({ message: "Orden aprobada correctamente" });
   } catch (err) {
     console.error("APPROVE ORDER ERROR:", err);
     res.status(500).json({ error: "Error interno" });

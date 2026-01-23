@@ -1,5 +1,3 @@
-const { sendEmail } = require("./emailService");
-const orderExpiredTemplate = require("./templates/orderExpired");
 const base = require("./orderBase");
 
 module.exports = ({ raffleTitle }) =>
