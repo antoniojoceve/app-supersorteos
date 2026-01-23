@@ -1,5 +1,7 @@
 const express = require("express");
 const cors = require("cors");
+const cron = require("node-cron");
+const { expirePendingOrders } = require("./services/expireOrders");
 
 const healthRoutes = require("./routes/health.routes");
 const usersRoutes = require("./routes/users.routes");
@@ -18,4 +20,17 @@ app.use("/api", authRoutes);
 app.use("/api/raffles", rafflesRoutes);
 app.use("/api", ordersRoutes);
 
+
+// Expirar órdenes pending cada 5 minutos
+cron.schedule("*/5 * * * *", async () => {
+    try {
+        const count = await expirePendingOrders();
+    if (count > 0) {
+      console.log(`🕒 ${count} órdenes expiradas automáticamente`);
+    }
+  } catch (err) {
+    console.error("Error expirando órdenes:", err);
+  }
+});
+    
 module.exports = app;
