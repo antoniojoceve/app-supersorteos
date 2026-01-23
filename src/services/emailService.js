@@ -12,6 +12,8 @@ if (RESEND_API_KEY) {
 
 async function sendEmail({ to, subject, html }) {
   try {
+    if (!resend) return;
+
     await resend.emails.send({
       from: "Super Sorteos <no-reply@supersorteos.com>",
       to,
