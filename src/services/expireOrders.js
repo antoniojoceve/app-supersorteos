@@ -11,7 +11,8 @@ export async function expirePendingOrders() {
         SELECT id
         FROM orders
         WHERE payment_status = 'pending'
-          AND created_at < NOW() - INTERVAL '30 minutes'
+            AND reviewed_at IS NULL
+            AND created_at < NOW() - INTERVAL '30 minutes'
         FOR UPDATE
       )
       UPDATE orders
