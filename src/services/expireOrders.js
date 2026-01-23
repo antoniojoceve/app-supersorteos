@@ -1,4 +1,6 @@
 const pool = require("../config/db");
+const { sendEmail } = require("./emailService");
+const orderExpiredTemplate = require("./templates/orderExpired");
 
 async function expirePendingOrders() {
   const client = await pool.connect();
@@ -33,6 +35,24 @@ async function expirePendingOrders() {
     }
 
     await client.query("COMMIT");
+
+    const { rows } = await client.query(`
+        SELECT u.email, r.title
+        FROM orders o
+        JOIN users u ON u.id = o.user_id
+        JOIN raffles r ON r.id = o.raffle_id
+        WHERE o.id = ANY($1)
+        `, [expiredIds]);
+
+    for (const row of rows) {
+        await sendEmail({
+            to: row.email,
+            subject: "Orden expirada - Super Sorteos",
+            html: orderExpiredTemplate({
+            raffleTitle: row.title,
+            }),
+        });
+    }
 
     return expiredIds.length;
   } catch (err) {
