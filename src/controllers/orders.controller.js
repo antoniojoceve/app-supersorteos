@@ -152,14 +152,25 @@ const createOrder = async (req, res) => {
     order_id: orderId,
   });
 
+  const infoRes = await pool.query(`
+    SELECT u.email, r.title, o.total_amount
+    FROM orders o
+    JOIN users u ON u.id = o.user_id
+    JOIN raffles r ON r.id = o.raffle_id
+    WHERE o.id = $1
+  `, [orderId]);
+
+  const info = infoRes.rows[0];
+
   await sendEmail({
-    to: user.email,
+    to: info.email,
     subject: "Orden creada - Super Sorteos",
     html: orderCreatedTemplate({
-      raffleTitle: raffle.title,
-      totalAmount: order.total_amount,
+      raffleTitle: info.title,
+      totalAmount: info.total_amount,
     }),
   });
+
 
   } catch (err) {
     await client.query("ROLLBACK");
@@ -197,14 +208,25 @@ const approveOrder = async (req, res) => {
 
     res.json({ message: "Orden aprobada correctamente" });
 
+    const infoRes = await pool.query(`
+      SELECT u.email, r.title, o.total_amount
+      FROM orders o
+      JOIN users u ON u.id = o.user_id
+      JOIN raffles r ON r.id = o.raffle_id
+      WHERE o.id = $1
+    `, [orderId]);
+
+    const info = infoRes.rows[0];
+
     await sendEmail({
-      to: user.email,
+      to: info.email,
       subject: "Orden aprobada - Super Sorteos",
       html: orderApprovedTemplate({
-        raffleTitle: raffle.title,
-        totalAmount: order.total_amount,
+        raffleTitle: info.title,
+        totalAmount: info.total_amount,
       }),
     });
+
 
   } catch (err) {
     console.error("APPROVE ORDER ERROR:", err);
@@ -264,11 +286,21 @@ const rejectOrder = async (req, res) => {
 
     await client.query("COMMIT");
 
+    const infoRes = await pool.query(`
+      SELECT u.email, r.title
+      FROM orders o
+      JOIN users u ON u.id = o.user_id
+      JOIN raffles r ON r.id = o.raffle_id
+      WHERE o.id = $1
+    `, [orderId]);
+
+    const info = infoRes.rows[0];
+
     await sendEmail({
-      to: user.email,
+      to: info.email,
       subject: "Orden rechazada - Super Sorteos",
       html: orderRejectedTemplate({
-        raffleTitle: raffle.title,
+        raffleTitle: info.title,
       }),
     });
 
