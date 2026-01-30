@@ -11,8 +11,13 @@ if (RESEND_API_KEY) {
 }
 
 async function sendEmail({ to, subject, html }) {
+  if (!resend) {
+    console.warn("📧 Email NO enviado (Resend no configurado)", subject, to);
+    return;
+  }
+
   try {
-    if (!resend) return;
+    console.log("📧 Enviando email:", subject, "→", to);
 
     await resend.emails.send({
       from: "onboarding@resend.dev",
@@ -20,9 +25,11 @@ async function sendEmail({ to, subject, html }) {
       subject,
       html,
     });
+
+    console.log("✅ Email enviado correctamente:", subject);
   } catch (err) {
-    // ⚠️ IMPORTANTE: el email NO rompe el flujo
-    console.error("Error enviando email:", err);
+    console.error("❌ Error enviando email:", subject);
+    console.error(err);
   }
 }
 
