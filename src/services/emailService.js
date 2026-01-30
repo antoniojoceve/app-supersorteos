@@ -15,7 +15,7 @@ async function sendEmail({ to, subject, html }) {
     if (!resend) return;
 
     await resend.emails.send({
-      from: "Super Sorteos <no-reply@supersorteos.com>",
+      from: "onboarding@resend.dev",
       to,
       subject,
       html,
